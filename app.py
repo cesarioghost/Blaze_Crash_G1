@@ -208,8 +208,7 @@ class WebScraper:
             if msg:
                 self.last_message_ids_by_group[g_id] = msg.message_id
 
-        # Mostra placar logo após enviar o palpite
-        self.results()
+        # Não Mostra mais o placar logo após enviar o palpite pois removi a linha send results abaixo
 
     # ===================== MARTINGALE =====================
     def martingale(self, resultado, finalnum):
