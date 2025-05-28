@@ -13,11 +13,11 @@ class WebScraper:
     WEBHOOK_URL = "https://automacao-stk-n8n.b6dfdz.easypanel.host/webhook/Blaze_Crash"
 
     # FIGURINHAS
-STK_FECHA_DIA      = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"   #sala fechada
-STK_ABRE_DIA       = "CAACAgEAAxkBAAE1f5JoNsHKVCTUbWPWZe_TDEoaYQsU5QACbAQAAl4ByUUIjW-sdJsr6DYE"   # sala aberta
-STK_WIN_SEM_GALE   = "CAACAgEAAxkBAAE1f6doNsL-F7PTY9JjIycLkFIVATMLpAAC0QAD7EWAR6BQIQgy2mgWNgQ"   # win sem gale
-STK_WIN_GALE       = "CAACAgEAAxkBAAE1f61oNsM54vzDVgv3Cg_uUp1usAQnPAAC_AADQSaBR11zLQEy5HO0NgQ"   # win gale 1/2
-STK_LOSS           = "CAACAgEAAxkBAAE1f8VoNsObInY9BYEvoGFnaysiVo9U0QACBAQAAn7ngAJKFrRni2QyVjYE"   # loss
+    STK_FECHA_DIA      = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"   #sala fechada
+    STK_ABRE_DIA       = "CAACAgEAAxkBAAE1f5JoNsHKVCTUbWPWZe_TDEoaYQsU5QACbAQAAl4ByUUIjW-sdJsr6DYE"   # sala aberta
+    STK_WIN_SEM_GALE   = "CAACAgEAAxkBAAE1f6doNsL-F7PTY9JjIycLkFIVATMLpAAC0QAD7EWAR6BQIQgy2mgWNgQ"   # win sem gale
+    STK_WIN_GALE       = "CAACAgEAAxkBAAE1f61oNsM54vzDVgv3Cg_uUp1usAQnPAAC_AADQSaBR11zLQEy5HO0NgQ"   # win gale 1/2
+    STK_LOSS           = "CAACAgEAAxkBAAE1f8VoNsObInY9BYEvoGFnaysiVo9U0QACBAQAAn7ngAJKFrRni2QyVjYE"   # loss
 
     def __init__(self):
         # -------- EDITÁVEIS --------
