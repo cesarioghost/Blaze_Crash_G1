@@ -13,11 +13,11 @@ class WebScraper:
     WEBHOOK_URL = "https://automacao-stk-n8n.b6dfdz.easypanel.host/webhook/Blaze_Crash"
 
     # FIGURINHAS
-    STK_FECHA_DIA      = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"   # sala fechada
-    STK_ABRE_DIA       = "CAACAgEAAxkBAAE1f5JoNsHKVCTUbWPWZe_TDEoaYQsU5QACbAQAAl4ByUUIjW-sdJsr6DYE"   # sala aberta
-    STK_WIN_SEM_GALE   = "CAACAgEAAxkBAAE1f6doNsL-F7PTY9JjIycLkFIVATMLpAAC0QAD7EWAR6BQIQgy2mgWNgQ"   # win sem gale
-    STK_WIN_GALE       = "CAACAgEAAxkBAAE1f61oNsM54vzDVgv3Cg_uUp1usAQnPAAC_AADQSaBR11zLQEy5HO0NgQ"   # win gale 1/2
-    STK_LOSS           = "CAACAgEAAxkBAAE1f8VoNsObInY9BYEvoGFnaysiVo9U0QACBAQAAn7ngAJKFrRni2QyVjYE"   # loss
+    STK_FECHA_DIA      = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"
+    STK_ABRE_DIA       = "CAACAgEAAxkBAAE1f5JoNsHKVCTUbWPWZe_TDEoaYQsU5QACbAQAAl4ByUUIjW-sdJsr6DYE"
+    STK_WIN_SEM_GALE   = "CAACAgEAAxkBAAE1f6doNsL-F7PTY9JjIycLkFIVATMLpAAC0QAD7EWAR6BQIQgy2mgWNgQ"
+    STK_WIN_GALE       = "CAACAgEAAxkBAAE1f61oNsM54vzDVgv3Cg_uUp1usAQnPAAC_AADQSaBR11zLQEy5HO0NgQ"
+    STK_LOSS           = "CAACAgEAAxkBAAE1f8VoNsObInY9BYEvoGFnaysiVo9U0QACBAQAAn7ngAJKFrRni2QyVjYE"
 
     def __init__(self):
         # -------- EDITÁVEIS --------
@@ -47,9 +47,8 @@ class WebScraper:
         self.win_streak = 0
         self.max_streak = 0
 
-        # -------- ESTATÍSTICAS POR ESTRATÉGIA (simples) --------
-        # exemplo: {"E1": {"enviada":1,"win_primeira":1,"win_gale1":0,"derrotas":0}}
-        self.estrategias_stats = {}
+        # -------- ESTATÍSTICAS POR ESTRATÉGIA --------
+        self.estrategias_stats = {}   # {"E1": {...}, ...}
         self.current_estrategia = None
 
         # -------- CONTROLES DO BOT --------
@@ -124,17 +123,16 @@ class WebScraper:
             # FECHA DIA
             for g_id in self.chat_ids:
                 self.safe_send_sticker(g_id, self.STK_FECHA_DIA)
-            self.results()  # placar final do dia
+            self.results()
             self.print_stats()
 
-            # Zera contadores gerais
+            # Zera contadores
             self.win_results = self.loss_results = 0
             self.win_first_try = self.win_gale1 = self.win_gale2 = 0
             self.win_streak = self.max_streak = 0
-            # Zera estatísticas por estratégia
             self.estrategias_stats = {}
 
-            time.sleep(60)  # espera 1 minuto
+            time.sleep(60)
 
             # ABRE NOVO DIA
             for g_id in self.chat_ids:
@@ -182,7 +180,7 @@ class WebScraper:
             )
         print(txt)
 
-    # ========= ALERTA DE GALE (e depois deletar) =========
+    # ========= ALERTA DE GALE =========
     def alert_gale(self):
         for g_id in self.chat_ids:
             msg = self.safe_send_message(
@@ -204,7 +202,6 @@ class WebScraper:
         self.analisar = False
         self.current_estrategia = estrategia_nome
 
-        # inicializa dicionário da estratégia se necessário
         if estrategia_nome not in self.estrategias_stats:
             self.estrategias_stats[estrategia_nome] = {
                 "enviada": 0,
@@ -237,7 +234,6 @@ class WebScraper:
 
     # ===================== MARTINGALE =====================
     def martingale(self, resultado, finalnum):
-        # ---------- WIN ----------
         if resultado == "WIN":
             self.win_results += 1
             self.win_streak += 1
@@ -248,7 +244,7 @@ class WebScraper:
                 self.estrategias_stats[self.current_estrategia]["win_primeira"] += 1
                 sticker = self.STK_WIN_SEM_GALE
                 message_txt = f"<b>Win Sem Gale ✅ | Vitória em {finalnum:.2f}x ✅</b>"
-            else:  # Gale 1
+            else:
                 self.win_gale1 += 1
                 self.estrategias_stats[self.current_estrategia]["win_gale1"] += 1
                 sticker = self.STK_WIN_GALE
@@ -258,7 +254,6 @@ class WebScraper:
                 self.safe_send_sticker(g_id, sticker)
                 self.safe_send_message(g_id, message_txt, parse_mode="html")
 
-        # ---------- LOSS ----------
         else:
             self.count += 1
             if self.count > self.gales:
@@ -270,13 +265,12 @@ class WebScraper:
                     self.safe_send_message(g_id, "<b>LOSS ❌</b>", parse_mode="html")
             else:
                 self.alert_gale()
-                return  # ainda na sequência de gales
+                return
 
-        # ---------- ENCERRA CICLO ----------
         self.count = 0
         self.analisar = True
-        self.delete()   # limpa alertas pendentes
-        self.results()  # placar em tempo real
+        self.delete()
+        self.results()
         self.print_stats()
         self.restart()
 
@@ -293,32 +287,30 @@ class WebScraper:
         while True:
             try:
                 time.sleep(1)
-                self.restart()  # verifica virada de dia
+                self.restart()
 
                 resp = requests.get(self.url_API, timeout=10)
                 resp.raise_for_status()
-                json_data = resp.json()
-
-                crash_points = [float(item["crash_point"]) for item in json_data]
+                crash_points = [float(item["crash_point"]) for item in resp.json()]
 
                 if crash_points != check and len(crash_points) > 6:
                     check = crash_points
                     print(f"[{', '.join(map(str, crash_points[:20]))}]")
-                    self.delete()  # remove alertas anteriores
+                    self.delete()
                     self.estrategy(crash_points)
 
             except Exception as e:
                 print(f"[ERRO] {e}")
 
-    # ===================== ESTRATÉGIAS (apenas manuais) =====================
+    # ===================== ESTRATÉGIAS (manuais) =====================
     def estrategy(self, results):
-        # Se já existe palpite em jogo, verifica WIN / LOSS
         if not self.analisar:
             self.check_results(results)
             return
 
-        # --------- SINAL MANUAL ---------
-# ---------- E1 ----------
+        # --------- Abaixo: cada bloco chama send_sinal(results[0], "EX") ---------
+
+        # ---------- E1 ----------
         if (
             len(results) >= 13
             and results[0] <= 1.99
@@ -337,9 +329,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E1")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E1")
             return
-        
+
         # ---------- E3 ----------
         if (
             len(results) >= 13
@@ -359,9 +351,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E3")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E3")
             return
-        
+
         # ---------- E5 ----------
         if (
             len(results) >= 12
@@ -380,9 +372,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E5")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E5")
             return
-        
+
         # ---------- E6 ----------
         if (
             len(results) >= 12
@@ -401,9 +393,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E6")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E6")
             return
-        
+
         # ---------- E7 ----------
         if (
             len(results) >= 13
@@ -423,9 +415,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E7")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E7")
             return
-        
+
         # ---------- E8 ----------
         if (
             len(results) >= 12
@@ -444,9 +436,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E8")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E8")
             return
-        
+
         # ---------- E9 ----------
         if (
             len(results) >= 11
@@ -464,9 +456,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E9")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E9")
             return
-        
+
         # ---------- E11 ----------
         if (
             len(results) >= 11
@@ -484,9 +476,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E11")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E11")
             return
-        
+
         # ---------- E12 ----------
         if (
             len(results) >= 13
@@ -506,9 +498,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E12")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E12")
             return
-        
+
         # ---------- E13 ----------
         if (
             len(results) >= 12
@@ -527,9 +519,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E13")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E13")
             return
-        
+
         # ---------- E14 ----------
         if (
             len(results) >= 13
@@ -549,9 +541,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E14")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E14")
             return
-        
+
         # ---------- E16 ----------
         if (
             len(results) >= 10
@@ -568,9 +560,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E16")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E16")
             return
-        
+
         # ---------- E17 ----------
         if (
             len(results) >= 13
@@ -590,9 +582,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E17")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E17")
             return
-        
+
         # ---------- E18 ----------
         if (
             len(results) >= 12
@@ -611,9 +603,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E18")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E18")
             return
-        
+
         # ---------- E19 ----------
         if (
             len(results) >= 13
@@ -633,9 +625,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E19")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E19")
             return
-        
+
         # ---------- E20 ----------
         if (
             len(results) >= 13
@@ -655,9 +647,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E20")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E20")
             return
-        
+
         # ---------- E21 ----------
         if (
             len(results) >= 13
@@ -677,9 +669,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E21")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E21")
             return
-        
+
         # ---------- E23 ----------
         if (
             len(results) >= 13
@@ -699,9 +691,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E23")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E23")
             return
-        
+
         # ---------- E24 ----------
         if (
             len(results) >= 12
@@ -720,9 +712,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E24")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E24")
             return
-        
+
         # ---------- E25 ----------
         if (
             len(results) >= 13
@@ -742,9 +734,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E25")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E25")
             return
-        
+
         # ---------- E28 ----------
         if (
             len(results) >= 13
@@ -764,9 +756,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E28")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E28")
             return
-        
+
         # ---------- E29 ----------
         if (
             len(results) >= 12
@@ -785,8 +777,9 @@ class WebScraper:
         ):
             print("SINAL ENCONTRADO! E29")
             self.alvo = 1.99
-            self.send_sinal(results[0])
+            self.send_sinal(results[0], "E29")
             return
+
 
 # ===================== EXECUÇÃO =====================
 if __name__ == "__main__":
