@@ -12,12 +12,12 @@ class WebScraper:
     # ========================== CONFIGURAÇÕES BÁSICAS ==========================
     WEBHOOK_URL = "https://automacao-stk-n8n.b6dfdz.easypanel.host/webhook/Blaze_Crash"
 
-    # FIGURINHAS (mesmas do bot de Double: troque se desejar)
-    STK_FECHA_DIA = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"
-    STK_ABRE_DIA = "CAACAgEAAxkBAAEMJ3dmUOJkY1I3G-fbOfUqJzJrEUK3SAACZAEAAladvUWiPv-Ml0JTGjUE"
-    STK_WIN_SEM_GALE = "CAACAgEAAxkBAAEMJ09mS6EpSDYdGIoirTFSct6Mj09yOwACLgIAAhlf8UWPCaYRIAn6WjUE"
-    STK_WIN_GALE      = "CAACAgEAAxkBAAEMJ1NmS6FXeVVF6gABCwvlA0UGDF1oq_8AAmECAALzR_BFho1sbO1a4rs1BA"
-    STK_LOSS          = "CAACAgEAAxkBAAEMJ1lmS6FrwQoDeT4NF4nSIYwxXaMHtAACNgIAAlq7-UU85F0_EghOBDUE"
+    # FIGURINHAS
+STK_FECHA_DIA      = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"   #sala fechada
+STK_ABRE_DIA       = "CAACAgEAAxkBAAE1f5JoNsHKVCTUbWPWZe_TDEoaYQsU5QACbAQAAl4ByUUIjW-sdJsr6DYE"   # sala aberta
+STK_WIN_SEM_GALE   = "CAACAgEAAxkBAAE1f6doNsL-F7PTY9JjIycLkFIVATMLpAAC0QAD7EWAR6BQIQgy2mgWNgQ"   # win sem gale
+STK_WIN_GALE       = "CAACAgEAAxkBAAE1f61oNsM54vzDVgv3Cg_uUp1usAQnPAAC_AADQSaBR11zLQEy5HO0NgQ"   # win gale 1/2
+STK_LOSS           = "CAACAgEAAxkBAAE1f8VoNsObInY9BYEvoGFnaysiVo9U0QACBAQAAn7ngAJKFrRni2QyVjYE"   # loss
 
     def __init__(self):
         # -------- EDITÁVEIS --------
@@ -323,26 +323,6 @@ class WebScraper:
             self.alvo = 1.99
             self.send_sinal(results[0])
             return
-
-# ---------- E2 ----------
-        if (
-            len(results) >= 11
-            and results[0] >= 2.0
-            and results[1] <= 1.99
-            and results[2] >= 2.0
-            and results[3] <= 1.99
-            and results[4] >= 2.0
-            and results[5] <= 1.99
-            and results[6] <= 1.99
-            and results[7] <= 1.99
-            and results[8] >= 2.0
-            and results[9] <= 1.99
-            and results[10] <= 1.99
-        ):
-            print("SINAL ENCONTRADO! E2")
-            self.alvo = 1.99
-            self.send_sinal(results[0])
-            return
         
         # ---------- E3 ----------
         if (
@@ -362,26 +342,6 @@ class WebScraper:
             and results[12] <= 1.99
         ):
             print("SINAL ENCONTRADO! E3")
-            self.alvo = 1.99
-            self.send_sinal(results[0])
-            return
-        
-         # ---------- E4 ----------
-        if (
-            len(results) >= 11
-            and results[0] <= 1.99
-            and results[1] <= 1.99
-            and results[2] >= 2.0
-            and results[3] <= 1.99
-            and results[4] <= 1.99
-            and results[5] >= 2.0
-            and results[6] <= 1.99
-            and results[7] <= 1.99
-            and results[8] >= 2.0
-            and results[9] >= 2.0
-            and results[10] <= 1.99
-        ):
-            print("SINAL ENCONTRADO! E4")
             self.alvo = 1.99
             self.send_sinal(results[0])
             return
@@ -491,25 +451,6 @@ class WebScraper:
             self.send_sinal(results[0])
             return
         
-        # ---------- E10 ----------
-        if (
-            len(results) >= 10
-            and results[0] <= 1.99
-            and results[1] <= 1.99
-            and results[2] <= 1.99
-            and results[3] >= 2.0
-            and results[4] <= 1.99
-            and results[5] <= 1.99
-            and results[6] <= 1.99
-            and results[7] >= 2.0
-            and results[8] <= 1.99
-            and results[9] <= 1.99
-        ):
-            print("SINAL ENCONTRADO! E10")
-            self.alvo = 1.99
-            self.send_sinal(results[0])
-            return
-        
         # ---------- E11 ----------
         if (
             len(results) >= 11
@@ -591,28 +532,6 @@ class WebScraper:
             and results[12] <= 1.99
         ):
             print("SINAL ENCONTRADO! E14")
-            self.alvo = 1.99
-            self.send_sinal(results[0])
-            return
-        
-        # ---------- E15 ----------
-        if (
-            len(results) >= 13
-            and results[0] <= 1.99
-            and results[1] <= 1.99
-            and results[2] >= 2.0
-            and results[3] <= 1.99
-            and results[4] >= 2.0
-            and results[5] >= 2.0
-            and results[6] <= 1.99
-            and results[7] <= 1.99
-            and results[8] <= 1.99
-            and results[9] >= 2.0
-            and results[10] <= 1.99
-            and results[11] <= 1.99
-            and results[12] <= 1.99
-        ):
-            print("SINAL ENCONTRADO! E15")
             self.alvo = 1.99
             self.send_sinal(results[0])
             return
@@ -745,25 +664,6 @@ class WebScraper:
             self.send_sinal(results[0])
             return
         
-        # ---------- E22 ----------
-        if (
-            len(results) >= 10
-            and results[0] >= 2.0
-            and results[1] <= 1.99
-            and results[2] <= 1.99
-            and results[3] <= 1.99
-            and results[4] >= 2.0
-            and results[5] <= 1.99
-            and results[6] >= 2.0
-            and results[7] >= 2.0
-            and results[8] <= 1.99
-            and results[9] <= 1.99
-        ):
-            print("SINAL ENCONTRADO! E22")
-            self.alvo = 1.99
-            self.send_sinal(results[0])
-            return
-        
         # ---------- E23 ----------
         if (
             len(results) >= 13
@@ -825,48 +725,6 @@ class WebScraper:
             and results[12] >= 2.0
         ):
             print("SINAL ENCONTRADO! E25")
-            self.alvo = 1.99
-            self.send_sinal(results[0])
-            return
-        
-        # ---------- E26 ----------
-        if (
-            len(results) >= 12
-            and results[0] <= 1.99
-            and results[1] >= 2.0
-            and results[2] <= 1.99
-            and results[3] >= 2.0
-            and results[4] <= 1.99
-            and results[5] <= 1.99
-            and results[6] >= 2.0
-            and results[7] <= 1.99
-            and results[8] >= 2.0
-            and results[9] <= 1.99
-            and results[10] >= 2.0
-            and results[11] >= 2.0
-        ):
-            print("SINAL ENCONTRADO! E26")
-            self.alvo = 1.99
-            self.send_sinal(results[0])
-            return
-        
-        # ---------- E27 ----------
-        if (
-            len(results) >= 12
-            and results[0] <= 1.99
-            and results[1] >= 2.0
-            and results[2] >= 2.0
-            and results[3] <= 1.99
-            and results[4] <= 1.99
-            and results[5] >= 2.0
-            and results[6] >= 2.0
-            and results[7] <= 1.99
-            and results[8] >= 2.0
-            and results[9] >= 2.0
-            and results[10] <= 1.99
-            and results[11] >= 2.0
-        ):
-            print("SINAL ENCONTRADO! E27")
             self.alvo = 1.99
             self.send_sinal(results[0])
             return
