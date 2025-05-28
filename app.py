@@ -13,7 +13,7 @@ class WebScraper:
     WEBHOOK_URL = "https://automacao-stk-n8n.b6dfdz.easypanel.host/webhook/Blaze_Crash"
 
     # FIGURINHAS
-    STK_FECHA_DIA      = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"   #sala fechada
+    STK_FECHA_DIA      = "CAACAgEAAxkBAAEMJ11mS6F8u4rDdUuKo9y6XObYTpmCtgACvgEAAsFWwUVjxQN4wmmSBDUE"   # sala fechada
     STK_ABRE_DIA       = "CAACAgEAAxkBAAE1f5JoNsHKVCTUbWPWZe_TDEoaYQsU5QACbAQAAl4ByUUIjW-sdJsr6DYE"   # sala aberta
     STK_WIN_SEM_GALE   = "CAACAgEAAxkBAAE1f6doNsL-F7PTY9JjIycLkFIVATMLpAAC0QAD7EWAR6BQIQgy2mgWNgQ"   # win sem gale
     STK_WIN_GALE       = "CAACAgEAAxkBAAE1f61oNsM54vzDVgv3Cg_uUp1usAQnPAAC_AADQSaBR11zLQEy5HO0NgQ"   # win gale 1/2
@@ -23,12 +23,12 @@ class WebScraper:
         # -------- EDITÁVEIS --------
         self.game = "Modo Crash 🚀"
 
-        # Lê o token do ambiente (configure TELEGRAM_BOT_TOKEN no Railway)
+        # Lê o token do ambiente
         self.token = os.getenv("TELEGRAM_BOT_TOKEN")
         if not self.token:
             raise ValueError("Variável de ambiente TELEGRAM_BOT_TOKEN não definida!")
 
-        # Lê os chat IDs do ambiente (configure CHAT_IDS, ex.: "-1002381442124, -1001931486076")
+        # Lê os chat IDs do ambiente
         chat_ids_env = os.getenv("CHAT_IDS")
         if chat_ids_env:
             self.chat_ids = [id.strip() for id in chat_ids_env.split(",")]
@@ -37,26 +37,27 @@ class WebScraper:
 
         self.url_API = "https://elmovimiento.vip/blaze_crash/luk/index.json"
         self.gales = 1
-        self.link = ""
 
-        # -------- VARIÁVEIS DE ESTATÍSTICAS --------
+        # -------- VARIÁVEIS DE ESTATÍSTICAS GERAIS --------
         self.win_results = 0
         self.loss_results = 0
-        self.max_hate = 0                 # sequência atual de vitórias
-        self.win_hate = 0                 # assertividade em %
         self.win_first_try = 0
         self.win_gale1 = 0
         self.win_gale2 = 0
         self.win_streak = 0
         self.max_streak = 0
-        self.total_palpites = 0
+
+        # -------- ESTATÍSTICAS POR ESTRATÉGIA (simples) --------
+        # exemplo: {"E1": {"enviada":1,"win_primeira":1,"win_gale1":0,"derrotas":0}}
+        self.estrategias_stats = {}
+        self.current_estrategia = None
 
         # -------- CONTROLES DO BOT --------
         self.count = 0
         self.analisar = True
         self.alvo = 0
 
-        # Para gerenciar mensagens (ex.: alert) que precisem ser deletadas
+        # Para gerenciamento de alertas
         self.last_message_ids_by_group = {}
         self.message_delete = False
 
@@ -68,7 +69,7 @@ class WebScraper:
         self.check_date = datetime.datetime.now(brasilia_tz).strftime("%d/%m/%Y")
 
     # =====================================================================
-    # FUNÇÕES "SEGURAS" DE ENVIO (ignoram falta de permissão e logam webhook)
+    # FUNÇÕES "SEGURAS" DE ENVIO
     # =====================================================================
     def send_webhook(self, payload: dict):
         try:
@@ -79,9 +80,7 @@ class WebScraper:
     def safe_send_message(self, chat_id, text, **kwargs):
         try:
             msg = self.bot.send_message(chat_id, text, **kwargs)
-            self.send_webhook(
-                {"evento": "mensagem_telegram", "chat_id": chat_id, "texto": text}
-            )
+            self.send_webhook({"evento": "mensagem_telegram", "chat_id": chat_id, "texto": text})
             return msg
         except Exception as e:
             if "need administrator rights" in str(e):
@@ -93,9 +92,7 @@ class WebScraper:
     def safe_send_sticker(self, chat_id, sticker):
         try:
             msg = self.bot.send_sticker(chat_id, sticker=sticker)
-            self.send_webhook(
-                {"evento": "sticker_telegram", "chat_id": chat_id, "sticker": sticker}
-            )
+            self.send_webhook({"evento": "sticker_telegram", "chat_id": chat_id, "sticker": sticker})
             return msg
         except Exception as e:
             if "need administrator rights" in str(e):
@@ -114,7 +111,7 @@ class WebScraper:
                 print(f"[ERRO] Falha ao deletar mensagem em {chat_id}: {e}")
 
     # =====================================================
-    # RESET DIÁRIO (fecha dia, gera placar final, abre novo)
+    # RESET DIÁRIO
     # =====================================================
     def restart(self):
         brasilia_tz = pytz.timezone("America/Sao_Paulo")
@@ -124,46 +121,66 @@ class WebScraper:
             print(f"🗓 Novo dia detectado: {current_date}. Reiniciando contadores…")
             self.check_date = current_date
 
-            # --- FECHA DIA ---
+            # FECHA DIA
             for g_id in self.chat_ids:
                 self.safe_send_sticker(g_id, self.STK_FECHA_DIA)
             self.results()  # placar final do dia
+            self.print_stats()
 
-            # Zera contadores
+            # Zera contadores gerais
             self.win_results = self.loss_results = 0
-            self.max_hate = self.win_hate = 0
             self.win_first_try = self.win_gale1 = self.win_gale2 = 0
             self.win_streak = self.max_streak = 0
-            self.total_palpites = 0
+            # Zera estatísticas por estratégia
+            self.estrategias_stats = {}
 
-            time.sleep(60)  # espera 1 minuto para reabrir
+            time.sleep(60)  # espera 1 minuto
 
-            # --- ABRE NOVO DIA ---
+            # ABRE NOVO DIA
             for g_id in self.chat_ids:
                 self.safe_send_sticker(g_id, self.STK_ABRE_DIA)
                 self.safe_send_message(
                     g_id, "🚀 <b>NOVO DIA INICIADO!</b> Estatísticas zeradas.", parse_mode="html"
                 )
-            self.results()  # placar zerado
+            self.results()
 
     # ===========================================
     # FUNÇÃO DE RESULTADOS (placar para os grupos)
     # ===========================================
     def results(self):
         total = self.win_results + self.loss_results
-        self.win_hate = f"{(100 * self.win_results / total):.2f}%" if total else "0.00%"
+        win_hate = f"{(100 * self.win_results / total):.2f}%" if total else "0.00%"
 
         placar = (
             "<b>🏆 Placar Atual 🏆</b>\n"
-            f"🥇 <b>Vitórias de Primeira</b> {self.win_first_try}\n"
+            f"🥇 <b>Vitórias de Primeira:</b> {self.win_first_try}\n"
             f"🥈 <b>Vitórias Gale 1:</b> {self.win_gale1}\n"
             f"💚 <b>Total de Vitórias:</b> {self.win_results}\n"
             f"💔 <b>Loss:</b> {self.loss_results}\n"
-            f"🎯 <b>Assertividade:</b> {self.win_hate}\n"
+            f"🎯 <b>Assertividade:</b> {win_hate}\n"
             f"♻️ <b>Sequência Máxima:</b> {self.max_streak}\n"
         )
         for g_id in self.chat_ids:
             self.safe_send_message(g_id, placar, parse_mode="html")
+
+    # ---------- estatísticas simplificadas (console) ----------
+    def print_stats(self):
+        txt = "\n🔥 Estatísticas das Estratégias 🔥\n"
+        for est in sorted(self.estrategias_stats.keys(), key=lambda x: int(x[1:])):
+            st = self.estrategias_stats[est]
+            assertv = (
+                (st["win_primeira"] + st["win_gale1"]) / st["enviada"] * 100
+                if st["enviada"]
+                else 0
+            )
+            txt += (
+                f"{est}: enviadas {st['enviada']} | "
+                f"win1ª {st['win_primeira']} | "
+                f"winG1 {st['win_gale1']} | "
+                f"loss {st['derrotas']} | "
+                f"assert {assertv:.1f}%\n"
+            )
+        print(txt)
 
     # ========= ALERTA DE GALE (e depois deletar) =========
     def alert_gale(self):
@@ -182,12 +199,22 @@ class WebScraper:
             self.message_delete = False
             self.last_message_ids_by_group.clear()
 
-    # =========== ENVIO DE SINAL (palpite confirmado) ===========
-    def send_sinal(self, finalnum):
+    # =========== ENVIO DE SINAL ===========
+    def send_sinal(self, finalnum, estrategia_nome):
         self.analisar = False
-        self.total_palpites += 1
+        self.current_estrategia = estrategia_nome
 
-        print(f"💥 Palpite Confirmado para {self.alvo}x após {finalnum}x 💥")
+        # inicializa dicionário da estratégia se necessário
+        if estrategia_nome not in self.estrategias_stats:
+            self.estrategias_stats[estrategia_nome] = {
+                "enviada": 0,
+                "win_primeira": 0,
+                "win_gale1": 0,
+                "derrotas": 0,
+            }
+        self.estrategias_stats[estrategia_nome]["enviada"] += 1
+
+        print(f"💥 {estrategia_nome} | Palpite {self.alvo}x após {finalnum}x 💥")
 
         mensagem = (
             "<b>Palpite Confirmado 💥</b>\n\n"
@@ -208,64 +235,53 @@ class WebScraper:
             if msg:
                 self.last_message_ids_by_group[g_id] = msg.message_id
 
-        # Não Mostra mais o placar logo após enviar o palpite pois removi a linha send results abaixo
-
     # ===================== MARTINGALE =====================
     def martingale(self, resultado, finalnum):
         # ---------- WIN ----------
         if resultado == "WIN":
             self.win_results += 1
-            self.max_hate += 1
             self.win_streak += 1
             self.max_streak = max(self.max_streak, self.win_streak)
 
-            # Stickers & mensagens
             if self.count == 0:
                 self.win_first_try += 1
-                for g_id in self.chat_ids:
-                    self.safe_send_sticker(g_id, self.STK_WIN_SEM_GALE)
-                    self.safe_send_message(g_id, "<b>Win Sem Gale ✅</b>", parse_mode="html")
-            elif self.count == 1:
+                self.estrategias_stats[self.current_estrategia]["win_primeira"] += 1
+                sticker = self.STK_WIN_SEM_GALE
+                message_txt = f"<b>Win Sem Gale ✅ | Vitória em {finalnum:.2f}x ✅</b>"
+            else:  # Gale 1
                 self.win_gale1 += 1
-                for g_id in self.chat_ids:
-                    self.safe_send_sticker(g_id, self.STK_WIN_GALE)
-                    self.safe_send_message(g_id, "<b>Win Gale 1 ✅</b>", parse_mode="html")
-            elif self.count == 2:
-                self.win_gale2 += 1
-                for g_id in self.chat_ids:
-                    self.safe_send_sticker(g_id, self.STK_WIN_GALE)
-                    self.safe_send_message(g_id, "<b>Win Gale 2 ✅</b>", parse_mode="html")
+                self.estrategias_stats[self.current_estrategia]["win_gale1"] += 1
+                sticker = self.STK_WIN_GALE
+                message_txt = f"<b>Win Gale 1 ✅ | Vitória em {finalnum:.2f}x ✅</b>"
 
             for g_id in self.chat_ids:
-                self.safe_send_message(
-                    g_id, f"<b>Vitória em {finalnum}x ✅</b>", parse_mode="html"
-                )
+                self.safe_send_sticker(g_id, sticker)
+                self.safe_send_message(g_id, message_txt, parse_mode="html")
 
         # ---------- LOSS ----------
-        else:  # "LOSS"
+        else:
             self.count += 1
             if self.count > self.gales:
                 self.loss_results += 1
                 self.win_streak = 0
-                self.max_hate = 0
+                self.estrategias_stats[self.current_estrategia]["derrotas"] += 1
                 for g_id in self.chat_ids:
                     self.safe_send_sticker(g_id, self.STK_LOSS)
                     self.safe_send_message(g_id, "<b>LOSS ❌</b>", parse_mode="html")
             else:
-                # Vai para o próximo gale
                 self.alert_gale()
-                return  # não reseta analisar nem envia placar ainda
+                return  # ainda na sequência de gales
 
         # ---------- ENCERRA CICLO ----------
         self.count = 0
         self.analisar = True
         self.delete()   # limpa alertas pendentes
         self.results()  # placar em tempo real
-        self.restart()  # verifica se mudou o dia
+        self.print_stats()
+        self.restart()
 
     # ===================== CHECAGEM DE RESULTADO =====================
     def check_results(self, results):
-        # Se bateu alvo → WIN, senão LOSS
         if results[0] >= self.alvo:
             self.martingale("WIN", results[0])
         else:
@@ -296,7 +312,7 @@ class WebScraper:
 
     # ===================== ESTRATÉGIAS (apenas manuais) =====================
     def estrategy(self, results):
-        # Se já existe palpite em jogo, apenas verifica WIN / LOSS
+        # Se já existe palpite em jogo, verifica WIN / LOSS
         if not self.analisar:
             self.check_results(results)
             return
@@ -771,8 +787,7 @@ class WebScraper:
             self.alvo = 1.99
             self.send_sinal(results[0])
             return
-        
-        
+
 # ===================== EXECUÇÃO =====================
 if __name__ == "__main__":
     bot = WebScraper()
